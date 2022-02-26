@@ -262,6 +262,6 @@ class CoAttention(nn.Module):
         b = torch.bmm(torch.transpose(beta, 1, 2), c) # (batch_size, M+1, hidden_size)
         s = torch.bmm(alpha, b) # (batch_size, N+1, hidden_size)
         u = torch.cat((s, a), dim=2)  # (batch_size, N+1, 2*hidden_size)
-        x = self.u_biLSTM(u) # (batch_size, N+1, 4*hidden_size)
+        x, get_rid_of = self.u_biLSTM(u) # (batch_size, N+1, 4*hidden_size)
 
         return x
