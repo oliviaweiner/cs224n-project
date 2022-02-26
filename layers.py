@@ -242,17 +242,17 @@ class CoAttention(nn.Module):
         super(CoAttention, self).__init__()
         self.drop_prob = drop_prob
         self.q_prime_weight = nn.Linear(hidden_size, hidden_size, bias=True) #our edit
-        self.c_null = nn.Parameter(torch.zeros(hidden_size))
-        self.q_prime_null = nn.Parameter(torch.zeros(hidden_size))
+        self.c_null = nn.Parameter(torch.zeros(1,1,hidden_size))
+        self.q_prime_null = nn.Parameter(torch.zeros(1,1,hidden_size))
         self.u_biLSTM = nn.LSTM(2 * hidden_size, 2 * hidden_size, num_layers=num_layers, batch_first=True, dropout=drop_prob, bidirectional=True)
-        # for weight in (self.c_null, self.q_prime_null): #added q_prime_weight
-        #     nn.init.xavier_uniform_(weight)
+        for weight in (self.c_null, self.q_prime_null): #added q_prime_weight
+            nn.init.xavier_uniform_(weight)
 
     def forward(self, c, q, c_mask, q_mask):
         batch_size, c_len, _ = c.size()
         q_prime = F.tanh(self.q_prime_weight(q))   # (batch_size, M, hidden_size)
-        q_prime = torch.cat((q_prime, self.q_prime_null), dim=1) # (batch_size, M+1, hidden_size)
-        c = torch.cat((c, self.c_null), dim=1) # (batch_size, N+1, hidden_size)
+        q_prime = torch.cat((q_prime, self.q_prime_null.expand(batch_size, -1, -1)), dim=1) # (batch_size, M+1, hidden_size)
+        c = torch.cat((c, self.c_null.expand(batch_size, -1, -1)), dim=1) # (batch_size, N+1, hidden_size)
         L = torch.bmm(c, torch.transpose(q_prime, 1, 2))  # (batch_size, N+1, M+1)
         alpha_softmax = nn.Softmax(dim=2)
         alpha = alpha_softmax(L) # (batch_size, N+1, M+1)
