@@ -251,6 +251,7 @@ class CoAttention(nn.Module):
 
     def forward(self, c, q, c_mask, q_mask):
         batch_size, c_len, _ = c.size()
+        q_len = q.size(1)
         q_prime = torch.bmm(q, self.q_prime_weight.expand(batch_size, -1, -1))
         q_prime += self.q_prime_bias
         q_prime = F.tanh(q_prime)   # (batch_size, M, hidden_size)
