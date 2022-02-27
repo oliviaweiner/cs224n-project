@@ -241,24 +241,26 @@ class CoAttention(nn.Module):
     def __init__(self, hidden_size, num_layers=1, drop_prob=0.1):
         super(CoAttention, self).__init__()
         self.drop_prob = drop_prob
-        self.q_prime_weight = nn.Linear(hidden_size, hidden_size, bias=True) #our edit
+        self.q_prime_weight = nn.Parameter(torch.zeros(1, hidden_size, hidden_size)) #our edit
+        self.q_prime_bias = nn.Parameter(torch.zeros(1, 1, hidden_size))
         self.c_null = nn.Parameter(torch.zeros(1,1,hidden_size))
         self.q_prime_null = nn.Parameter(torch.zeros(1,1,hidden_size))
         self.u_biLSTM = nn.LSTM(2 * hidden_size, 2 * hidden_size, num_layers=num_layers, batch_first=True, dropout=drop_prob, bidirectional=True)
-        for weight in (self.c_null, self.q_prime_null): #added q_prime_weight
+        for weight in (self.c_null, self.q_prime_null, self.q_prime_weight, self.q_prime_bias): #added q_prime_weight
             nn.init.xavier_uniform_(weight)
 
     def forward(self, c, q, c_mask, q_mask):
         batch_size, c_len, _ = c.size()
-        q_prime = F.tanh(self.q_prime_weight(q))   # (batch_size, M, hidden_size)
+        q_prime = torch.bmm(self.q_prime_weight.expand(batch_size, -1, -1), q) + self.q_prime_bias
+        q_prime = F.tanh(q_prime)   # (batch_size, M, hidden_size)
         q_prime = torch.cat((q_prime, self.q_prime_null.expand(batch_size, -1, -1)), dim=1) # (batch_size, M+1, hidden_size)
         c = torch.cat((c, self.c_null.expand(batch_size, -1, -1)), dim=1) # (batch_size, N+1, hidden_size)
         L = torch.bmm(c, torch.transpose(q_prime, 1, 2))  # (batch_size, N+1, M+1)
-        alpha_softmax = nn.Softmax(dim=2)
-        alpha = alpha_softmax(L) # (batch_size, N+1, M+1)
+        c_mask = c_mask.view(batch_size, c_len, 1)  # (batch_size, c_len, 1)
+        q_mask = q_mask.view(batch_size, 1, q_len) # batch_size, 1, q_len
+        alpha = masked_softmax(L, q_mask, dim=2,) # (batch_size, N+1, M+1)
         a = torch.bmm(alpha, q_prime)  # (batch_size, N+1, hidden_size)
-        beta_softmax = nn.Softmax(dim=1)
-        beta = beta_softmax(L) # (batch_size, N+1, M+1)
+        beta = masked_softmax(L, c_mask, dim=1) # (batch_size, N+1, M+1)
         b = torch.bmm(torch.transpose(beta, 1, 2), c) # (batch_size, M+1, hidden_size)
         s = torch.bmm(alpha, b) # (batch_size, N+1, hidden_size)
         u = torch.split(torch.cat((s, a), dim=2), [c_len, 1], dim=1)[0]  # (batch_size, N+1, 2*hidden_size)
