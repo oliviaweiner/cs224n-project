@@ -259,7 +259,7 @@ class CoAttention(nn.Module):
         c = torch.cat((c, self.c_null.expand(batch_size, -1, -1)), dim=1) # (batch_size, N+1, hidden_size)
         L = torch.bmm(c, torch.transpose(q_prime, 1, 2))  # (batch_size, N+1, M+1)
         ones = torch.ones(batch_size, 1, 1)
-        ones.to(c_mask.device)
+        ones = ones.to(c_mask.device)
         c_mask = torch.cat((c_mask.view(batch_size, c_len, 1), ones), dim=1)  # (batch_size, c_len, 1)
         q_mask = torch.cat((q_mask.view(batch_size, 1, q_len), ones), dim=2) # batch_size, 1, q_len
         alpha = masked_softmax(L, q_mask, dim=2)  # (batch_size, N+1, M+1)
