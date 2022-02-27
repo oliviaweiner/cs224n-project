@@ -250,8 +250,8 @@ class CoAttention(nn.Module):
             nn.init.xavier_uniform_(weight)
 
     def forward(self, c, q, c_mask, q_mask):
-        print(c_mask)
-        print(q_mask)
+        print(c_mask.size())
+        print(q_mask.size())
         batch_size, c_len, _ = c.size()
         q_len = q.size(1)
         q_prime = torch.bmm(q, self.q_prime_weight.expand(batch_size, -1, -1))
