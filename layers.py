@@ -258,8 +258,8 @@ class CoAttention(nn.Module):
         q_prime = torch.cat((q_prime, self.q_prime_null.expand(batch_size, -1, -1)), dim=1) # (batch_size, M+1, hidden_size)
         c = torch.cat((c, self.c_null.expand(batch_size, -1, -1)), dim=1) # (batch_size, N+1, hidden_size)
         L = torch.bmm(c, torch.transpose(q_prime, 1, 2))  # (batch_size, N+1, M+1)
-        c_mask = torch.cat(c_mask.view(batch_size, c_len, 1), torch.tensor([1]), dim=1)  # (batch_size, c_len, 1)
-        q_mask = torch.cat(q_mask.view(batch_size, 1, q_len), torch.tensor([1]), dim=2) # batch_size, 1, q_len
+        c_mask = torch.cat((c_mask.view(batch_size, c_len, 1), torch.tensor([1])), dim=1)  # (batch_size, c_len, 1)
+        q_mask = torch.cat((q_mask.view(batch_size, 1, q_len), torch.tensor([1])), dim=2) # batch_size, 1, q_len
         alpha = masked_softmax(L, q_mask, dim=2,) # (batch_size, N+1, M+1)
         a = torch.bmm(alpha, q_prime)  # (batch_size, N+1, hidden_size)
         beta = masked_softmax(L, c_mask, dim=1) # (batch_size, N+1, M+1)
