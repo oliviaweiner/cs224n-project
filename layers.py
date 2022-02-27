@@ -254,7 +254,7 @@ class CoAttention(nn.Module):
         q_len = q.size(1)
         q_prime = torch.bmm(q, self.q_prime_weight.expand(batch_size, -1, -1))
         q_prime += self.q_prime_bias
-        q_prime = F.tanh(q_prime)   # (batch_size, M, hidden_size)
+        q_prime = torch.tanh(q_prime)   # (batch_size, M, hidden_size)
         q_prime = torch.cat((q_prime, self.q_prime_null.expand(batch_size, -1, -1)), dim=1) # (batch_size, M+1, hidden_size)
         c = torch.cat((c, self.c_null.expand(batch_size, -1, -1)), dim=1) # (batch_size, N+1, hidden_size)
         L = torch.bmm(c, torch.transpose(q_prime, 1, 2))  # (batch_size, N+1, M+1)
