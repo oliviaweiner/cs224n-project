@@ -274,7 +274,7 @@ class CoAttention(nn.Module):
 
 class HighwayMaxoutNetwork(nn.Module):
     def __init__(self, hidden_size, maxout_options, drop_prob = 0.5):
-        super(DynamicDecoder, self).__init__()
+        super(HighwayMaxoutNetwork, self).__init__()
         self.w_d = nn.Parameter(torch.zeros(1, 5 * hidden_size, hidden_size))
         self.w_1 = nn.Parameter(torch.zeros(maxout_options, 3*hidden_size, hidden_size))
         self.b_1 = nn.Parameter(torch.zeros(1, maxout_options, 1, hidden_size))
