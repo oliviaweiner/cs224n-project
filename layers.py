@@ -271,3 +271,92 @@ class CoAttention(nn.Module):
         x, get_rid_of = self.u_biLSTM(u) # (batch_size, N+1, 4*hidden_size)
 
         return x
+
+class HighwayMaxoutNetwork(nn.Module):
+    def __init__(self, hidden_size, maxout_options, drop_prob = 0.5):
+        super(DynamicDecoder, self).__init__()
+        self.w_d = nn.Parameter(torch.zeros(1, 5 * hidden_size, hidden_size))
+        self.w_1 = nn.Parameter(torch.zeros(maxout_options, 3*hidden_size, hidden_size))
+        self.b_1 = nn.Parameter(torch.zeros(1, maxout_options, 1, hidden_size))
+        self.w_2 = nn.Parameter(torch.zeros(maxout_options, hidden_size, hidden_size))
+        self.b_2 = nn.Parameter(torch.zeros(1, maxout_options, 1, hidden_size))
+        self.w_3 = nn.Parameter(torch.zeros(maxout_options, 2*hidden_size, 1))
+        self.b_3 = nn.Parameter(torch.zeros(1, maxout_options, 1, 1))
+        self.dropout = nn.Dropout(p=drop_prob)
+        for weight in (self.w_d, self.w_1, self.b_1, self.w_2, self.b_2):
+            nn.init.xavier_uniform_(weight)
+
+    def forward(self, h_vec, coattention):
+        r = torch.tanh(h_vec @ self.w_d).expand(-1, coattention.size(1), -1)  # (b,m,l)
+        m_1 = torch.cat((coattention, r), dim=2).unsqueeze(1) #(b,1,m,3l)
+        m_1 = (m_1 @ self.w_1) + self.b_1 #(b,p,m,l)
+        m_1 = self.dropout(m_1)  # (b,p,m,l)
+        m_1 = torch.max(m_1, 1, keepdim=True) #(b,1,m,l)
+        m_2 = (m_1 @ self.w_2) + self.b_2 #(b,p,m,l)
+        m_2 = self.dropout(m_2)  # (b,p,m,l)
+        m_2 = torch.max(m_2, 1, keepdim=True) #(b,1,m,l)
+        out = torch.cat((m_1, m_2), dim=3) #(b,1,m,2l)
+        out = (out @ self.w_3) + self.b_3 #(b,p,m,1)
+        out = self.dropout(out.squeeze(dim=3)) #(b,p,m)
+        out = torch.max(out, dim=1) #(b,m)
+
+        return out
+
+
+class Decoder(nn.Module):
+    """Bidirectional attention originally used by BiDAF.
+
+    Bidirectional attention computes attention in two directions:
+    The context attends to the query and the query attends to the context.
+    The output of this layer is the concatenation of [context, c2q_attention,
+    context * c2q_attention, context * q2c_attention]. This concatenation allows
+    the attention vector at each timestep, along with the embeddings from
+    previous layers, to flow through the attention layer to the modeling layer.
+    The output has shape (batch_size, context_len, 8 * hidden_size).
+
+    Args:
+        hidden_size (int): Size of hidden activations.
+        drop_prob (float): Probability of zero-ing out activations.
+    """
+    def __init__(self, hidden_size, maxout_options, drop_prob=0.1):
+        super(Decoder, self).__init__()
+        self.LSTM_dec = nn.LSTM(input_size=4*hidden_size, hidden_size=hidden_size, batch_first=True, dropout=drop_prob)
+        self.HMN_start = HighwayMaxoutNetwork(hidden_size, maxout_options)
+        self.HMN_end = HighwayMaxoutNetwork(hidden_size, maxout_options)
+
+    def forward(self, h, c, start_predictions, end_predictions, coattention, c_mask):
+        #h => (b, 1, l)
+        #coattention => (b, m, 2l)
+
+
+        start_encoding = coattention.gather(start_predictions.unsqueeze(-1), dim=1) #(b, 1, 2l)
+        end_encoding = coattention.gather(end_predictions.unsqueeze(-1), dim=1) #(b, 1, 2l)
+        get_rid_of, (new_h, new_c) = self.LSTM_dec(torch.cat((start_encoding, end_encoding), dim=2), h, c)[0] #(b, 1, l)
+        h_vec = torch.cat((new_h, start_encoding, end_encoding), dim=2) #(b, 1, 5l)
+        alphas = masked_softmax(self.HMN_start(h_vec, coattention), c_mask, log_softmax=True)
+        betas = masked_softmax(self.HMN_end(h_vec, coattention), c_mask, log_softmax=True)
+
+        return new_h, new_c, alphas, betas
+
+class DynamicDecoder(nn.Module):
+    def __init__(self, hidden_size, maxout_options, drop_prob=0.1):
+        super(DynamicDecoder, self).__init__()
+        self.decoder = nn.Decoder(hidden_size, maxout_options, drop_prob)
+
+    def forward(self, c_len, c_mask, coattention):
+        h = None
+        c = None
+        start_predictions = torch.zeros_like(c_len)
+        end_predictions = c_len - torch.ones_like(c_len)
+        cumulative_alphas = torch.zeros_like(c_mask)
+        cumulative_betas = torch.zeros_like(c_mask)
+        iters = 4
+        for i in range(iters):
+            h, c, alphas, betas = self.dec(h, c, start_predictions, end_predictions, coattention, c_mask)
+            cumulative_alphas += alphas
+            cumulative_betas += betas
+            start_predictions = torch.max(alphas, 1)[1]
+            end_predictions = torch.max(betas, 1)[1]
+        out = cumulative_alphas / iters, cumulative_betas / iters, start_predictions, end_predictions
+
+        return out
