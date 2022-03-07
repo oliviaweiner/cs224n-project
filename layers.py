@@ -352,7 +352,7 @@ class DynamicDecoder(nn.Module):
         cumulative_betas = torch.zeros_like(c_mask)
         iters = 4
         for i in range(iters):
-            h, c, alphas, betas = self.dec(h, c, start_predictions, end_predictions, coattention, c_mask)
+            h, c, alphas, betas = self.decoder(h, c, start_predictions, end_predictions, coattention, c_mask)
             cumulative_alphas += alphas
             cumulative_betas += betas
             start_predictions = torch.max(alphas, 1)[1]
