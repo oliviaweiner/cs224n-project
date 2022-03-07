@@ -329,8 +329,8 @@ class Decoder(nn.Module):
         #coattention => (b, m, 2l)
 
 
-        start_encoding = coattention.gather(1, start_predictions.unsqueeze(-1)) #(b, 1, 2l)
-        end_encoding = coattention.gather(1, end_predictions.unsqueeze(-1)) #(b, 1, 2l)
+        start_encoding = coattention.gather(1, start_predictions) #(b, 1, 2l)
+        end_encoding = coattention.gather(1, end_predictions) #(b, 1, 2l)
         get_rid_of, (new_h, new_c) = self.LSTM_dec(torch.cat((start_encoding, end_encoding), dim=2), h, c)[0] #(b, 1, l)
         h_vec = torch.cat((new_h, start_encoding, end_encoding), dim=2) #(b, 1, 5l)
         alphas = masked_softmax(self.HMN_start(h_vec, coattention), c_mask, log_softmax=True)
