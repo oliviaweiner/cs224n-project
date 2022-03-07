@@ -341,7 +341,7 @@ class Decoder(nn.Module):
 class DynamicDecoder(nn.Module):
     def __init__(self, hidden_size, maxout_options, drop_prob=0.1):
         super(DynamicDecoder, self).__init__()
-        self.decoder = nn.Decoder(hidden_size, maxout_options, drop_prob)
+        self.decoder = Decoder(hidden_size, maxout_options, drop_prob)
 
     def forward(self, c_len, c_mask, coattention):
         h = None
