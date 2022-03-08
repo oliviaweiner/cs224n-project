@@ -320,6 +320,7 @@ class Decoder(nn.Module):
     """
     def __init__(self, hidden_size, maxout_options, drop_prob=0.1):
         super(Decoder, self).__init__()
+        self.coatt_length = 2 * hidden_size
         self.LSTM_dec = nn.LSTM(input_size=4*hidden_size, hidden_size=hidden_size, batch_first=True, dropout=drop_prob)
         self.HMN_start = HighwayMaxoutNetwork(hidden_size, maxout_options)
         self.HMN_end = HighwayMaxoutNetwork(hidden_size, maxout_options)
@@ -328,10 +329,8 @@ class Decoder(nn.Module):
         #h => (b, 1, l)
         #coattention => (b, m, 2l)
 
-        print(coattention.shape)
-        print(start_predictions.shape)
-        start_encoding = torch.gather(coattention, 1, start_predictions) #(b, 1, 2l)
-        end_encoding = torch.gather(coattention, 1, end_predictions) #(b, 1, 2l)
+        start_encoding = torch.gather(coattention, 1, start_predictions.unsqueeze(-1).unsqueeze(-1).expand(-1,-1,self.coatt_length)) #(b, 1, 2l)
+        end_encoding = torch.gather(coattention, 1, end_predictions.unsqueeze(-1).unsqueeze(-1).expand(-1,-1,self.coatt_length)) #(b, 1, 2l)
         get_rid_of, (new_h, new_c) = self.LSTM_dec(torch.cat((start_encoding, end_encoding), dim=2), h, c)[0] #(b, 1, l)
         h_vec = torch.cat((new_h, start_encoding, end_encoding), dim=2) #(b, 1, 5l)
         alphas = masked_softmax(self.HMN_start(h_vec, coattention), c_mask, log_softmax=True)
