@@ -335,7 +335,7 @@ class Decoder(nn.Module):
             get_rid_of, (new_h, new_c) = self.LSTM_dec(torch.cat((start_encoding, end_encoding), dim=2), (h, c)) #(b, 1, l)
         else:
             get_rid_of, (new_h, new_c) = self.LSTM_dec(torch.cat((start_encoding, end_encoding), dim=2))
-        h_vec = torch.cat((new_h, start_encoding, end_encoding), dim=2) #(b, 1, 5l)
+        h_vec = torch.cat((new_h.transpose(0, 1), start_encoding, end_encoding), dim=2) #(b, 1, 5l)
         alphas = masked_softmax(self.HMN_start(h_vec, coattention), c_mask, log_softmax=True)
         betas = masked_softmax(self.HMN_end(h_vec, coattention), c_mask, log_softmax=True)
 
