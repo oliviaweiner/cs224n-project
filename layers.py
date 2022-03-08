@@ -291,14 +291,14 @@ class HighwayMaxoutNetwork(nn.Module):
         m_1 = torch.cat((coattention, r), dim=2).unsqueeze(1) #(b,1,m,3l)
         m_1 = (m_1 @ self.w_1) + self.b_1 #(b,p,m,l)
         m_1 = self.dropout(m_1)  # (b,p,m,l)
-        m_1 = torch.max(m_1, 1, keepdim=True) #(b,1,m,l)
+        m_1 = torch.max(m_1, 1, keepdim=True)[0] #(b,1,m,l)
         m_2 = (m_1 @ self.w_2) + self.b_2 #(b,p,m,l)
         m_2 = self.dropout(m_2)  # (b,p,m,l)
-        m_2 = torch.max(m_2, 1, keepdim=True) #(b,1,m,l)
+        m_2 = torch.max(m_2, 1, keepdim=True)[0] #(b,1,m,l)
         out = torch.cat((m_1, m_2), dim=3) #(b,1,m,2l)
         out = (out @ self.w_3) + self.b_3 #(b,p,m,1)
         out = self.dropout(out.squeeze(dim=3)) #(b,p,m)
-        out = torch.max(out, dim=1) #(b,m)
+        out = torch.max(out, dim=1)[0] #(b,m)
 
         return out
 
