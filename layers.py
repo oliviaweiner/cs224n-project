@@ -328,7 +328,8 @@ class Decoder(nn.Module):
         #h => (b, 1, l)
         #coattention => (b, m, 2l)
 
-
+        print(coattention.shape)
+        print(start_predictions.shape)
         start_encoding = torch.gather(coattention, 1, start_predictions) #(b, 1, 2l)
         end_encoding = torch.gather(coattention, 1, end_predictions) #(b, 1, 2l)
         get_rid_of, (new_h, new_c) = self.LSTM_dec(torch.cat((start_encoding, end_encoding), dim=2), h, c)[0] #(b, 1, l)
