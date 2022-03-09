@@ -102,6 +102,7 @@ class RNNEncoder(nn.Module):
         x = pack_padded_sequence(x, lengths.cpu(), batch_first=True)
 
         # Apply RNN
+        self.rnn.flatten_parameters()
         x, _ = self.rnn(x)  # (batch_size, seq_len, 2 * hidden_size)
 
         # Unpack and reverse sort
@@ -268,6 +269,7 @@ class CoAttention(nn.Module):
         b = torch.bmm(torch.transpose(beta, 1, 2), c) # (batch_size, M+1, hidden_size)
         s = torch.bmm(alpha, b) # (batch_size, N+1, hidden_size)
         u = torch.split(torch.cat((s, a), dim=2), [c_len, 1], dim=1)[0]  # (batch_size, N+1, 2*hidden_size)
+        self.u_biLSTM.flatten_parameters()
         x, get_rid_of = self.u_biLSTM(u) # (batch_size, N+1, 4*hidden_size)
 
         return x
@@ -331,6 +333,7 @@ class Decoder(nn.Module):
 
         start_encoding = torch.gather(coattention, 1, start_predictions.unsqueeze(-1).unsqueeze(-1).expand(-1,-1,self.coatt_length)) #(b, 1, 2l)
         end_encoding = torch.gather(coattention, 1, end_predictions.unsqueeze(-1).unsqueeze(-1).expand(-1,-1,self.coatt_length)) #(b, 1, 2l)
+        self.LSTM_dec.flatten_parameters()
         if type(h) != type(None):
             get_rid_of, (new_h, new_c) = self.LSTM_dec(torch.cat((start_encoding, end_encoding), dim=2), (h, c)) #(b, 1, l)
         else:
