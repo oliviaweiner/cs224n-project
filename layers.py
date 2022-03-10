@@ -275,7 +275,7 @@ class CoAttention(nn.Module):
         return x
 
 class HighwayMaxoutNetwork(nn.Module):
-    def __init__(self, hidden_size, maxout_options, drop_prob = 0.5):
+    def __init__(self, hidden_size, maxout_options, drop_prob = 0.1):
         super(HighwayMaxoutNetwork, self).__init__()
         self.w_d = nn.Parameter(torch.zeros(1, 5 * hidden_size, hidden_size))
         self.w_1 = nn.Parameter(torch.zeros(maxout_options, 3*hidden_size, hidden_size))
@@ -356,7 +356,7 @@ class DynamicDecoder(nn.Module):
         end_predictions = c_len - torch.ones_like(c_len)
         cumulative_alphas = torch.zeros_like(c_mask, dtype=torch.float)
         cumulative_betas = torch.zeros_like(c_mask, dtype=torch.float)
-        iters = 2
+        iters = 1
         for i in range(iters):
             h, c, alphas, betas = self.decoder(h, c, start_predictions, end_predictions, coattention, c_mask)
             cumulative_alphas += alphas
