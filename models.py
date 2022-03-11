@@ -30,7 +30,7 @@ class BiDAF(nn.Module):
         drop_prob (float): Dropout probability.
         char_vectors (torch.Tensor): Pre-trained charecter vectors.
     """
-    def __init__(self, word_vectors, hidden_size, drop_prob=0.1, char_vectors):
+    def __init__(self, word_vectors, hidden_size, char_vectors, drop_prob=0.1):
         super(BiDAF, self).__init__()
         self.emb = layers.Embedding(word_vectors=word_vectors,
                                     hidden_size=hidden_size,
