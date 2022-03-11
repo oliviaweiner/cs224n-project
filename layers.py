@@ -31,7 +31,7 @@ class Embedding(nn.Module):
         self.proj = nn.Linear(word_vectors.size(1) + char_vectors.size(1), hidden_size, bias=False)
         self.hwy = HighwayEncoder(2, hidden_size)
         print('reached')
-        self.conv_layer = nn.Conv2d(hidden_size, hidden_size, (0, 4))
+        self.conv_layer = nn.Conv2d(in_channels=hidden_size, out_channels=hidden_size, kernel_size=(0, 5))
         #- set so that hin and Hout are the same
         #in channels is number of input dimensions in each character embedding
         #out chanels should be same if not changing size (hidden state hidden_size)
