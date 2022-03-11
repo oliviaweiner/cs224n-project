@@ -30,8 +30,9 @@ class Embedding(nn.Module):
         self.char_embed = nn.Embedding.from_pretrained(char_vectors)
         self.proj = nn.Linear(word_vectors.size(1) + char_vectors.size(1), hidden_size, bias=False)
         self.hwy = HighwayEncoder(2, hidden_size)
-        print('reached')
+        print('started init')
         self.conv_layer = nn.Conv2d(in_channels=hidden_size, out_channels=hidden_size, kernel_size=(0, 5))
+        print('completed layer')
         #- set so that hin and Hout are the same
         #in channels is number of input dimensions in each character embedding
         #out chanels should be same if not changing size (hidden state hidden_size)
@@ -42,8 +43,9 @@ class Embedding(nn.Module):
     def forward(self, x):
         emb = self.embed(x)   # (batch_size, seq_len, embed_size)
         char_emb = self.char_embed(x) # (batch_size, seq_len, char_embed_size)
+        print('started forward')
         char_emb = self.conv_layer(char_emb)
-
+        print('used conv layer')
         cat_emb = torch.cat((emb, char_emb), dim=2) # (batch_size, seq_len, embed_size + char_embed_size)
         cat_emb = F.dropout(cat_emb, self.drop_prob, self.training)
         cat_emb = self.proj(cat_emb)  # (batch_size, seq_len, hidden_size)
