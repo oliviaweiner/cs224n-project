@@ -32,7 +32,6 @@ class Embedding(nn.Module):
         print("word vectors size")
         print(word_vectors.size(0))
         print(word_vectors.size(1))
-        print(word_vectors.size(2))
 
 
     def forward(self, x):
