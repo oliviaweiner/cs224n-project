@@ -45,17 +45,16 @@ class Embedding(nn.Module):
 
     def forward(self, word_idxs, char_idxs):
         emb = self.embed(word_idxs)   # (batch_size, seq_len, embed_size)
-        char_emb = self.char_embed(char_idxs) # (batch_size, seq_len, char_embed_size)
-        print(char_emb.shape)
-        import sys
-        sys.exit()
-        char_emb = nn.permute(char_emb, (0, 2, char_emb.size(1), max_word_len))  #  (batch_size, embed_size, seq_len, max_word_len)
-        char_emb = self.conv_layer(char_emb)  #6.  (batch_size, embed_size, seq_len, arbitrary number that used to be max_word_len)  is shape of this correct
-        char_emb = torch.max(char_emb, 3)   #7. dimensions here
+        emb = F.dropout(emb, self.drop_prob, self.training)
+        char_emb = self.char_embed(char_idxs) # (batch_size, seq_len, max_word_len, char_embed_size)
+        char_emb = F.dropout(char_emb, self.drop_prob/2, self.training)
+        char_emb = nn.permute(char_emb, (0, 3, 1, 2))  #  (batch_size, char_emb_size, seq_len, max_word_len)
+        char_emb = self.conv_layer(char_emb)  #6.  (batch_size, hidden_size, seq_len, arbitrary number that used to be max_word_len)  is shape of this correct
+        char_emb = torch.max(char_emb, 3)   #7. (batch_size, hidden_size, seq_len)
+        char_emb = char_emb.transpose(1, 2)  #(batch_size, seq_len, hidden_size)
         #8. need to change dimensions before concatenate?
         #9. need to change anything else in this file?
-        cat_emb = torch.cat((emb, char_emb), dim=2) # (batch_size, seq_len, embed_size + char_embed_size)
-        cat_emb = F.dropout(cat_emb, self.drop_prob, self.training)
+        cat_emb = torch.cat((emb, char_emb), dim=2) # (batch_size, seq_len, embed_size + hidden_size)
         cat_emb = self.proj(cat_emb)  # (batch_size, seq_len, hidden_size)
         cat_emb = self.hwy(cat_emb)   # (batch_size, seq_len, hidden_size)
 
