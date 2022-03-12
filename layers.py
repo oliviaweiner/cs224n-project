@@ -29,6 +29,9 @@ class Embedding(nn.Module):
         self.embed = nn.Embedding.from_pretrained(word_vectors)
         self.proj = nn.Linear(word_vectors.size(1), hidden_size, bias=False)
         self.hwy = HighwayEncoder(2, hidden_size)
+        print("word vectors size")
+        print(word_vectors.size)
+
 
     def forward(self, x):
         emb = self.embed(x)   # (batch_size, seq_len, embed_size)
