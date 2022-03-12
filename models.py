@@ -28,7 +28,7 @@ class BiDAF(nn.Module):
         word_vectors (torch.Tensor): Pre-trained word vectors.
         hidden_size (int): Number of features in the hidden state at each layer.
         drop_prob (float): Dropout probability.
-        char_vectors (torch.Tensor): Pre-trained charecter vectors.
+        char_vectors (torch.Tensor): Pre-trained character vectors. - added implementation
     """
     def __init__(self, word_vectors, hidden_size, char_vectors, drop_prob=0.1):
         super(BiDAF, self).__init__()

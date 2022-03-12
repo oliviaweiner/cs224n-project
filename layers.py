@@ -28,32 +28,30 @@ class Embedding(nn.Module):
         self.drop_prob = drop_prob
         self.embed = nn.Embedding.from_pretrained(word_vectors)
         self.char_embed = nn.Embedding.from_pretrained(char_vectors)
+
         self.proj = nn.Linear(word_vectors.size(1) + char_vectors.size(1), hidden_size, bias=False)
+        #1. I changed self.proj dimensions, is that correct?
+
         self.hwy = HighwayEncoder(2, hidden_size)
-        # print('started init')
-        # self.conv_layer = nn.Conv2d(in_channels=char_vectors.size(1), out_channels=char_vectors.size(1), kernel_size=(0, 5))
-        # print('completed layer')
-        #- set so that hin and Hout are the same
-        #in channels is number of input dimensions in each character embedding
-        #out chanels should be same if not changing size (hidden state hidden_size)
-        #stride 1
-        #width is max length of any word in n. of characters. In args documentation
-        #width specified on p. 6 of paper, they use width of 5, width out is 1
-        self.hidden_size = hidden_size
+
+        emb_size = word_vectors.size(1)
+        #2. is this the correct way to get embed_size - in forward we use x to find it
+        self.conv_layer = nn.Conv2d(in_channels=emb_size, out_channels=emb_size, kernel_size=(0, 4))
+        #3. kernel doesn't work with 0, how to proceed?
+
+        self.maxpool = nn.MaxPool2d((0,4))
+        # 4. is this how maxpool is declared, right dimensions - how to choose over width?
 
     def forward(self, x):
+        max_word_len = x.size(1)
+        #5. is this hidden_length, is this correct? embed size? a little confused
         emb = self.embed(x)   # (batch_size, seq_len, embed_size)
-        seq_len = emb.size(1)
-        print('started init')
-        self.conv_layer = nn.Conv2d(in_channels=seq_len, out_channels=seq_len, kernel_size=(1, 4))
-        print('completed layer')
         char_emb = self.char_embed(x) # (batch_size, seq_len, char_embed_size)
-        print('char_embed size:')
-        print(char_emb.size(2))
-        char_emb = char_emb.view(char_emb.size(0), int(char_emb.size(2)/4), char_emb.size(1), 4)
-        print('started forward')
-        char_emb = self.conv_layer(char_emb)
-        print('used conv layer')
+        char_emb = nn.permute(char_emb, (char_emb.size(0), char_emb.size(2), char_emb.size(1), max_word_len))  #  (batch_size, embed_size, seq_len, max_word_len)
+        char_emb = self.conv_layer(char_emb)  #6.  (batch_size, embed_size, seq_len, 1?)  ???? is shape of this correct
+        char_emb = self.maxpool(char_emb)   #7. dimensions here
+        #8. need to change dimensions before concatenate?
+        #9. need to change anything else in this file?
         cat_emb = torch.cat((emb, char_emb), dim=2) # (batch_size, seq_len, embed_size + char_embed_size)
         cat_emb = F.dropout(cat_emb, self.drop_prob, self.training)
         cat_emb = self.proj(cat_emb)  # (batch_size, seq_len, hidden_size)
