@@ -38,6 +38,8 @@ class Embedding(nn.Module):
         #2. is this the correct way to get embed_size - in forward we use x to find it
         self.conv_layer = nn.Conv2d(in_channels=emb_size, out_channels=hidden_size, kernel_size=(1, 5))
         #3. kernel doesn't work with 0
+        nn.init.kaiming_normal_(self.conv_layer.weight, nonlinearity='relu')
+
 
         self.maxpool = nn.MaxPool2d((0,4))
         # 4. is this how maxpool is declared, right dimensions - how to choose over width?
@@ -48,7 +50,7 @@ class Embedding(nn.Module):
         emb = F.dropout(emb, self.drop_prob, self.training)
         char_emb = self.char_embed(char_idxs) # (batch_size, seq_len, max_word_len, char_embed_size)
         char_emb = F.dropout(char_emb, self.drop_prob/2, self.training)
-        char_emb = nn.permute(char_emb, (0, 3, 1, 2))  #  (batch_size, char_emb_size, seq_len, max_word_len)
+        char_emb = char_emb.permute(0, 3, 1, 2)  #  (batch_size, char_emb_size, seq_len, max_word_len)
         char_emb = self.conv_layer(char_emb)  #6.  (batch_size, hidden_size, seq_len, arbitrary number that used to be max_word_len)  is shape of this correct
         char_emb = torch.max(char_emb, 3)   #7. (batch_size, hidden_size, seq_len)
         char_emb = char_emb.transpose(1, 2)  #(batch_size, seq_len, hidden_size)
