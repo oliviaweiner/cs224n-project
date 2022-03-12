@@ -31,7 +31,7 @@ class Embedding(nn.Module):
         self.proj = nn.Linear(word_vectors.size(1) + char_vectors.size(1), hidden_size, bias=False)
         self.hwy = HighwayEncoder(2, hidden_size)
         print('started init')
-        self.conv_layer = nn.Conv2d(in_channels=self.char_vectors.size(1), out_channels=self.char_vectors.size(1), kernel_size=(0, 5))
+        self.conv_layer = nn.Conv2d(in_channels=char_vectors.size(1), out_channels=char_vectors.size(1), kernel_size=(0, 5))
         print('completed layer')
         #- set so that hin and Hout are the same
         #in channels is number of input dimensions in each character embedding
