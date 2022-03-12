@@ -47,6 +47,7 @@ class Embedding(nn.Module):
         self.conv_layer = nn.Conv2d(in_channels=seq_len, out_channels=seq_len, kernel_size=(1, 5))
         print('completed layer')
         char_emb = self.char_embed(x) # (batch_size, seq_len, char_embed_size)
+        char_emb = char_emb.view(char_emb.size(0), char_emb.size(1), int(char_emb.size(2)/5), 5)
         print('started forward')
         char_emb = self.conv_layer(char_emb)
         print('used conv layer')
