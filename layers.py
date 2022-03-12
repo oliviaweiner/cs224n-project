@@ -44,7 +44,7 @@ class Embedding(nn.Module):
         emb = self.embed(x)   # (batch_size, seq_len, embed_size)
         seq_len = emb.size(1)
         print('started init')
-        self.conv_layer = nn.Conv2d(in_channels=seq_len, out_channels=seq_len, kernel_size=(0, 5))
+        self.conv_layer = nn.Conv2d(in_channels=seq_len, out_channels=seq_len, kernel_size=(1, 5))
         print('completed layer')
         char_emb = self.char_embed(x) # (batch_size, seq_len, char_embed_size)
         print('started forward')
