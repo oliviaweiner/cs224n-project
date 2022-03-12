@@ -29,27 +29,31 @@ class Embedding(nn.Module):
         self.embed = nn.Embedding.from_pretrained(word_vectors)
         self.char_embed = nn.Embedding.from_pretrained(char_vectors)
 
-        self.proj = nn.Linear(word_vectors.size(1) + char_vectors.size(1), hidden_size, bias=False)
-        #1. I changed self.proj dimensions, is that correct?
+        self.proj = nn.Linear(word_vectors.size(1) + hidden_size, hidden_size, bias=False)
+        #1. I changed self.proj dimensions, is that correct? Change to size map char vectors size after fed int ovonvolution
 
         self.hwy = HighwayEncoder(2, hidden_size)
 
-        emb_size = word_vectors.size(1)
+        emb_size = char_vectors.size(1)
         #2. is this the correct way to get embed_size - in forward we use x to find it
-        self.conv_layer = nn.Conv2d(in_channels=emb_size, out_channels=emb_size, kernel_size=(0, 4))
-        #3. kernel doesn't work with 0, how to proceed?
+        self.conv_layer = nn.Conv2d(in_channels=emb_size, out_channels=hidden_size, kernel_size=(1, 5))
+        #3. kernel doesn't work with 0
 
         self.maxpool = nn.MaxPool2d((0,4))
         # 4. is this how maxpool is declared, right dimensions - how to choose over width?
+        #pool over last dimension, can take a max over last dimension nn.max
 
     def forward(self, x):
         max_word_len = x.size(1)
-        #5. is this hidden_length, is this correct? embed size? a little confused
+        #5. is this max_word_len? embed size? a little confused
         emb = self.embed(x)   # (batch_size, seq_len, embed_size)
         char_emb = self.char_embed(x) # (batch_size, seq_len, char_embed_size)
-        char_emb = nn.permute(char_emb, (char_emb.size(0), char_emb.size(2), char_emb.size(1), max_word_len))  #  (batch_size, embed_size, seq_len, max_word_len)
-        char_emb = self.conv_layer(char_emb)  #6.  (batch_size, embed_size, seq_len, 1?)  ???? is shape of this correct
-        char_emb = self.maxpool(char_emb)   #7. dimensions here
+        print(char_emb.shape)
+        import sys
+        sys.exit()
+        char_emb = nn.permute(char_emb, (0, 2, char_emb.size(1), max_word_len))  #  (batch_size, embed_size, seq_len, max_word_len)
+        char_emb = self.conv_layer(char_emb)  #6.  (batch_size, embed_size, seq_len, arbitrary number that used to be max_word_len)  is shape of this correct
+        char_emb = torch.max(char_emb, 3)   #7. dimensions here
         #8. need to change dimensions before concatenate?
         #9. need to change anything else in this file?
         cat_emb = torch.cat((emb, char_emb), dim=2) # (batch_size, seq_len, embed_size + char_embed_size)
