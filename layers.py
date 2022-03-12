@@ -32,6 +32,12 @@ class Embedding(nn.Module):
 
     def forward(self, x):
         emb = self.embed(x)   # (batch_size, seq_len, embed_size)
+        print("batch size:")
+        print(emb.size(0))
+        print("seq len:")
+        print(emb.size(1))
+        print("embed size:")
+        print(emb.size(2))
         emb = F.dropout(emb, self.drop_prob, self.training)
         emb = self.proj(emb)  # (batch_size, seq_len, hidden_size)
         emb = self.hwy(emb)   # (batch_size, seq_len, hidden_size)
