@@ -43,11 +43,9 @@ class Embedding(nn.Module):
         # 4. is this how maxpool is declared, right dimensions - how to choose over width?
         #pool over last dimension, can take a max over last dimension nn.max
 
-    def forward(self, x):
-        max_word_len = x.size(1)
-        #5. is this max_word_len? embed size? a little confused
-        emb = self.embed(x)   # (batch_size, seq_len, embed_size)
-        char_emb = self.char_embed(x) # (batch_size, seq_len, char_embed_size)
+    def forward(self, word_idxs, char_idxs):
+        emb = self.embed(word_idxs)   # (batch_size, seq_len, embed_size)
+        char_emb = self.char_embed(char_idxs) # (batch_size, seq_len, char_embed_size)
         print(char_emb.shape)
         import sys
         sys.exit()
