@@ -50,7 +50,7 @@ class Embedding(nn.Module):
         char_emb = self.char_embed(x) # (batch_size, seq_len, char_embed_size)
         print('char_embed size:')
         print(char_emb.size(2))
-        char_emb = char_emb.view(char_emb.size(0), int(self.hidden_size/5), char_emb.size(1), 5)
+        char_emb = char_emb.view(char_emb.size(0), int(char_emb.size(2)/4), char_emb.size(1), 4)
         print('started forward')
         char_emb = self.conv_layer(char_emb)
         print('used conv layer')
