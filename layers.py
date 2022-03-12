@@ -27,7 +27,7 @@ class Embedding(nn.Module):
         super(Embedding, self).__init__()
         self.drop_prob = drop_prob
         self.embed = nn.Embedding.from_pretrained(word_vectors)
-        self.char_embed = nn.Embedding.from_pretrained(char_vectors)
+        self.char_embed = nn.Embedding.from_pretrained(char_vectors, freeze=false)
 
         self.proj = nn.Linear(word_vectors.size(1) + hidden_size, hidden_size, bias=False)
         #1. I changed self.proj dimensions, is that correct? Change to size map char vectors size after fed int ovonvolution
