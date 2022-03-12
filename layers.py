@@ -50,7 +50,9 @@ class Embedding(nn.Module):
         emb = F.dropout(emb, self.drop_prob, self.training)
         char_emb = self.char_embed(char_idxs) # (batch_size, seq_len, max_word_len, char_embed_size)
         char_emb = F.dropout(char_emb, self.drop_prob/2, self.training)
+        print("char idxs:")
         print(char_idxs.shape)
+        print("char embs:")
         print(char_emb.shape)
         char_emb = char_emb.permute(0, 3, 1, 2)  #  (batch_size, char_emb_size, seq_len, max_word_len)
         char_emb = self.conv_layer(char_emb)  #6.  (batch_size, hidden_size, seq_len, arbitrary number that used to be max_word_len)  is shape of this correct
