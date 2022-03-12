@@ -30,7 +30,9 @@ class Embedding(nn.Module):
         self.proj = nn.Linear(word_vectors.size(1), hidden_size, bias=False)
         self.hwy = HighwayEncoder(2, hidden_size)
         print("word vectors size")
-        print(word_vectors.size)
+        print(word_vectors.size(0))
+        print(word_vectors.size(1))
+        print(word_vectors.size(2))
 
 
     def forward(self, x):
