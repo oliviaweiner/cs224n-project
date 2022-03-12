@@ -39,15 +39,16 @@ class Embedding(nn.Module):
         #stride 1
         #width is max length of any word in n. of characters. In args documentation
         #width specified on p. 6 of paper, they use width of 5, width out is 1
+        self.hidden_size = hidden_size
 
     def forward(self, x):
         emb = self.embed(x)   # (batch_size, seq_len, embed_size)
         seq_len = emb.size(1)
         print('started init')
-        self.conv_layer = nn.Conv2d(in_channels=seq_len, out_channels=seq_len, kernel_size=(1, 5))
+        self.conv_layer = nn.Conv2d(in_channels=seq_len, out_channels=seq_len, kernel_size=(1, 4))
         print('completed layer')
         char_emb = self.char_embed(x) # (batch_size, seq_len, char_embed_size)
-        char_emb = char_emb.view(char_emb.size(0), *, char_emb.size(1), 5)
+        char_emb = char_emb.view(char_emb.size(0), hidden_size*5, char_emb.size(1), 5)
         print('started forward')
         char_emb = self.conv_layer(char_emb)
         print('used conv layer')
