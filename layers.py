@@ -23,20 +23,44 @@ class Embedding(nn.Module):
         hidden_size (int): Size of hidden activations.
         drop_prob (float): Probability of zero-ing out activations
     """
-    def __init__(self, word_vectors, hidden_size, drop_prob):
+    def __init__(self, word_vectors, hidden_size, drop_prob, char_vectors):
         super(Embedding, self).__init__()
         self.drop_prob = drop_prob
         self.embed = nn.Embedding.from_pretrained(word_vectors)
-        self.proj = nn.Linear(word_vectors.size(1), hidden_size, bias=False)
+        self.char_embed = nn.Embedding.from_pretrained(char_vectors, freeze=False)
+
+        self.proj = nn.Linear(word_vectors.size(1) + hidden_size, hidden_size, bias=False)
+        #1. I changed self.proj dimensions, is that correct? Change to size map char vectors size after fed int ovonvolution
+
         self.hwy = HighwayEncoder(2, hidden_size)
 
-    def forward(self, x):
-        emb = self.embed(x)   # (batch_size, seq_len, embed_size)
-        emb = F.dropout(emb, self.drop_prob, self.training)
-        emb = self.proj(emb)  # (batch_size, seq_len, hidden_size)
-        emb = self.hwy(emb)   # (batch_size, seq_len, hidden_size)
+        emb_size = char_vectors.size(1)
+        #2. is this the correct way to get embed_size - in forward we use x to find it
+        self.conv_layer = nn.Conv2d(in_channels=emb_size, out_channels=hidden_size, kernel_size=(1, 5))
+        #3. kernel doesn't work with 0
+        nn.init.kaiming_normal_(self.conv_layer.weight, nonlinearity='relu')
 
-        return emb
+
+        self.maxpool = nn.MaxPool2d((0,4))
+        # 4. is this how maxpool is declared, right dimensions - how to choose over width?
+        #pool over last dimension, can take a max over last dimension nn.max
+
+    def forward(self, word_idxs, char_idxs):
+        emb = self.embed(word_idxs)   # (batch_size, seq_len, embed_size)
+        emb = F.dropout(emb, self.drop_prob, self.training)
+        char_emb = self.char_embed(char_idxs) # (batch_size, seq_len, max_word_len, char_embed_size)
+        char_emb = F.dropout(char_emb, self.drop_prob/2, self.training)
+        char_emb = char_emb.permute(0, 3, 1, 2)  #  (batch_size, char_emb_size, seq_len, max_word_len)
+        char_emb = self.conv_layer(char_emb)  #6.  (batch_size, hidden_size, seq_len, arbitrary number that used to be max_word_len)  is shape of this correct
+        char_emb = torch.max(char_emb, 3)[0]   #7. (batch_size, hidden_size, seq_len)
+        char_emb = char_emb.transpose(1, 2)  #(batch_size, seq_len, hidden_size)
+        #8. need to change dimensions before concatenate?
+        #9. need to change anything else in this file?
+        cat_emb = torch.cat((emb, char_emb), dim=2) # (batch_size, seq_len, embed_size + hidden_size)
+        cat_emb = self.proj(cat_emb)  # (batch_size, seq_len, hidden_size)
+        cat_emb = self.hwy(cat_emb)   # (batch_size, seq_len, hidden_size)
+
+        return cat_emb
 
 
 class HighwayEncoder(nn.Module):
@@ -356,11 +380,11 @@ class DynamicDecoder(nn.Module):
         end_predictions = c_len - torch.ones_like(c_len)
         cumulative_alphas = torch.zeros_like(c_mask, dtype=torch.float)
         cumulative_betas = torch.zeros_like(c_mask, dtype=torch.float)
-        iters = 1
+        iters = 2
         for i in range(iters):
             h, c, alphas, betas = self.decoder(h, c, start_predictions, end_predictions, coattention, c_mask)
-            cumulative_alphas += alphas
-            cumulative_betas += betas
+            cumulative_alphas += (i + (1/2)) * alphas
+            cumulative_betas += (i + (1/2)) * betas
             start_predictions = torch.max(alphas, 1)[1]
             end_predictions = torch.max(betas, 1)[1]
         out = cumulative_alphas / iters, cumulative_betas / iters, start_predictions, end_predictions
