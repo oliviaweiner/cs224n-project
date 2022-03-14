@@ -383,10 +383,10 @@ class DynamicDecoder(nn.Module):
         iters = 2
         for i in range(iters):
             h, c, alphas, betas = self.decoder(h, c, start_predictions, end_predictions, coattention, c_mask)
-            cumulative_alphas += (i + (1/2)) * alphas
-            cumulative_betas += (i + (1/2)) * betas
+            cumulative_alphas += alphas
+            cumulative_betas += betas
             start_predictions = torch.max(alphas, 1)[1]
             end_predictions = torch.max(betas, 1)[1]
-        out = cumulative_alphas / iters, cumulative_betas / iters, start_predictions, end_predictions
+        out = cumulative_alphas / iters, cumulative_betas / iters, alphas, betas
 
         return out
