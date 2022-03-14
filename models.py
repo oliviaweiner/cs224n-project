@@ -28,12 +28,14 @@ class BiDAF(nn.Module):
         word_vectors (torch.Tensor): Pre-trained word vectors.
         hidden_size (int): Number of features in the hidden state at each layer.
         drop_prob (float): Dropout probability.
+        char_vectors (torch.Tensor): Pre-trained character vectors. - added implementation
     """
-    def __init__(self, word_vectors, hidden_size, drop_prob=0.1):
+    def __init__(self, word_vectors, hidden_size, char_vectors, drop_prob=0.1):
         super(BiDAF, self).__init__()
         self.emb = layers.Embedding(word_vectors=word_vectors,
                                     hidden_size=hidden_size,
-                                    drop_prob=drop_prob)
+                                    drop_prob=drop_prob,
+                                    char_vectors=char_vectors)
 
         self.enc = layers.RNNEncoder(input_size=hidden_size,
                                      hidden_size=hidden_size,
@@ -54,13 +56,14 @@ class BiDAF(nn.Module):
         self.dec = layers.DynamicDecoder(hidden_size=4*hidden_size,
                                          maxout_options=8)
 
-    def forward(self, cw_idxs, qw_idxs):
+    def forward(self, cw_idxs, qw_idxs, cc_idxs, qc_idxs):
         c_mask = torch.zeros_like(cw_idxs) != cw_idxs
         q_mask = torch.zeros_like(qw_idxs) != qw_idxs
         c_len, q_len = c_mask.sum(-1), q_mask.sum(-1)
 
-        c_emb = self.emb(cw_idxs)         # (batch_size, c_len, hidden_size)
-        q_emb = self.emb(qw_idxs)         # (batch_size, q_len, hidden_size)
+        c_emb = self.emb(cw_idxs, cc_idxs)         # (batch_size, c_len, hidden_size)
+        q_emb = self.emb(qw_idxs, qc_idxs)         # (batch_size, q_len, hidden_size)
+
 
         c_enc = self.enc(c_emb, c_len)    # (batch_size, c_len, 2 * hidden_size)
         q_enc = self.enc(q_emb, q_len)    # (batch_size, q_len, 2 * hidden_size)
@@ -69,5 +72,7 @@ class BiDAF(nn.Module):
                        c_mask, q_mask)    # (batch_size, c_len, 8 * hidden_size)
 
         out = self.dec(c_len, c_mask, att)
+
+        #function
 
         return out
