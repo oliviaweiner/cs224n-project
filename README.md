@@ -1,4 +1,4 @@
-# CS224N default final project (2022 IID SQuAD track)
+# CS224N final project (2022 IID SQuAD track)
 
 ## Setup
 
