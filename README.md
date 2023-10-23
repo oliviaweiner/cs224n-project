@@ -10,3 +10,5 @@ the performance of the coattention baseline, but still underperform the standard
 baseline. In fact, the baseline only improves in the case where we use character
 embeddings with the standard BiDirectional Attention Flow (BiDAF) layer and
 single-pass decoder.
+
+Please refer to "Project Report" file for more information.
