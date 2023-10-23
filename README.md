@@ -1,17 +1,12 @@
 # CS224N final project (2022 IID SQuAD track)
 
-## Setup
-
-1. Make sure you have [Miniconda](https://conda.io/docs/user-guide/install/index.html#regular-installation) installed
-
-2. cd into src, run `conda env create -f environment.yml`
-    1. This creates a Conda environment called `squad`
-
-3. Run `conda activate squad`
-    1. This activates the `squad` environment
-    2. Do this each time you want to write/test your code
-
-4. Run `python setup.py`
-    1. This downloads SQuAD 2.0 training and dev sets, as well as the GloVe 300-dimensional word vectors (840B)
-    2. This also pre-processes the dataset for efficient data loading
-    3. For a MacBook Pro on the Stanford network, `setup.py` takes around 30 minutes total  
+In this project, we aim to reproduce a coattention layer on the Stanford Question
+Answering dataset (SQuAD) baseline model, and investigate its relationship with
+other common SQuAD techniques. We start by testing how a coattention layer
+improves the baseline model and find that when it is not paired with any other
+techniques, it lowers performance. Next, we implement the Dynamic Decoder and
+Highway Network, as well as Character Embeddings, and find that both increase
+the performance of the coattention baseline, but still underperform the standard
+baseline. In fact, the baseline only improves in the case where we use character
+embeddings with the standard BiDirectional Attention Flow (BiDAF) layer and
+single-pass decoder.
